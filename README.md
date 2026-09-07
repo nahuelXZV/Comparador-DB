@@ -6,7 +6,7 @@ La aplicación genera el script, pero **no lo ejecuta** contra la base destino.
 
 ## Estado actual
 
-La primera estrategia, **Actualización segura**, está implementada. La estrategia **Reconstruir tabla** está registrada en la arquitectura, pero todavía no genera SQL.
+Las dos estrategias de generación están implementadas: **Actualización segura** y **Reconstruir tabla**.
 
 La interfaz permite:
 
@@ -39,10 +39,10 @@ La generación usa el patrón Strategy:
 ```text
 IScriptGenerationStrategy
 ├── SafeUpdateScriptGenerationStrategy      Implementada
-└── RebuildTableScriptGenerationStrategy    Pendiente
+└── RebuildTableScriptGenerationStrategy    Implementada
 ```
 
-`SafeUpdateScriptGenerationStrategy` genera cambios aditivos. `RebuildTableScriptGenerationStrategy` será responsable de reconstruir una tabla cuando sea necesario conservar el orden exacto de columnas.
+`SafeUpdateScriptGenerationStrategy` genera cambios aditivos. `RebuildTableScriptGenerationStrategy` crea una tabla auxiliar con el orden de origen, copia los datos y sustituye la tabla anterior dentro de la transacción. Este segundo modo conserva únicamente nombre, tipo, nulabilidad y valores por defecto; no replica `IDENTITY`, índices, claves ni triggers.
 
 ## Estructura
 
@@ -76,7 +76,7 @@ También se puede abrir `Comparador.slnx` en Visual Studio y establecer `Desktop
 
 ## Limitaciones conocidas
 
-- La estrategia de reconstrucción de tablas todavía no está implementada.
+- La reconstrucción se omite si la tabla destino contiene columnas que no existen en origen, para no eliminarlas silenciosamente.
 - Los valores automáticos para columnas `NOT NULL` deben revisarse antes de ejecutar el script en un entorno productivo.
 - La aplicación no almacena contraseñas: solo se mantienen en memoria durante la sesión.
 

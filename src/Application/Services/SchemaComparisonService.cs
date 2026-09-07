@@ -15,6 +15,7 @@ public sealed class SchemaComparisonService
 
         var missingTables = new List<TableDefinition>();
         var missingColumns = new List<MissingColumn>();
+        var tablesToRebuild = new List<TableRebuildCandidate>();
 
         foreach (var originTable in originTables)
         {
@@ -28,14 +29,21 @@ public sealed class SchemaComparisonService
                 .Select(column => column.Name)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+            var missingColumnsInTable = new List<ColumnDefinition>();
             foreach (var originColumn in originTable.Columns)
             {
                 if (!destinationColumns.Contains(originColumn.Name))
+                {
                     missingColumns.Add(new MissingColumn(originTable.Schema, originTable.Name, originColumn));
+                    missingColumnsInTable.Add(originColumn);
+                }
             }
+
+            if (missingColumnsInTable.Count > 0)
+                tablesToRebuild.Add(new TableRebuildCandidate(originTable, destinationTable, missingColumnsInTable));
         }
 
-        return new DatabaseComparisonResult(missingTables, missingColumns);
+        return new DatabaseComparisonResult(missingTables, missingColumns, tablesToRebuild);
     }
 
     private static string GetTableKey(string schema, string table) => $"{schema}.{table}";

@@ -140,7 +140,7 @@
                             <TextBlock Text="Método de generación" VerticalAlignment="Center" Margin="0,0,12,0" />
                             <ComboBox Width="300" SelectedValuePath="Tag" SelectedValue="{Binding SelectedGenerationMode}">
                                 <ComboBoxItem Content="Actualización segura" Tag="{x:Static models:ScriptGenerationMode.SafeUpdate}" />
-                                <ComboBoxItem Content="Reconstruir tabla (pendiente)" Tag="{x:Static models:ScriptGenerationMode.RebuildTable}" />
+                                <ComboBoxItem Content="Reconstruir tabla" Tag="{x:Static models:ScriptGenerationMode.RebuildTable}" />
                             </ComboBox>
                         </StackPanel>
                         <Grid>
@@ -162,9 +162,9 @@
                             <TextBlock Text="3. SCRIPT SQL" Style="{StaticResource SectionHeader}" DockPanel.Dock="Left" />
                             <TextBlock Text="{Binding ComparisonSummary}" Foreground="#52647E" VerticalAlignment="Center" HorizontalAlignment="Right" />
                         </DockPanel>
-                        <TextBox Text="Configure ambas conexiones, seleccione los esquemas y presione ‘Comparar’." FontFamily="Cascadia Mono, Consolas" FontSize="13" AcceptsReturn="True"
+                        <TextBox Text="{Binding GeneratedScript, Mode=OneWay}" FontFamily="Cascadia Mono, Consolas" FontSize="13" AcceptsReturn="True"
                                  TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                 MinHeight="260" IsReadOnly="True" Background="#101827" Foreground="#E8EEF9" Padding="14" TextChanged="TextBox_TextChanged" />
+                                 MinHeight="260" IsReadOnly="True" Background="#101827" Foreground="#E8EEF9" Padding="14" />
                         <TextBlock Text="Avisos de seguridad" FontWeight="SemiBold" Margin="0,16,0,6" />
                         <ListBox ItemsSource="{Binding Warnings}" MinHeight="55" BorderBrush="{StaticResource BorderBrush}" />
                     </StackPanel>

@@ -161,7 +161,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var generated = _strategyResolver.Get(SelectedGenerationMode).Generate(comparison);
             GeneratedScript = generated.Script;
             Replace(Warnings, generated.Warnings);
-            ComparisonSummary = $"{comparison.MissingTables.Count} tabla(s), {comparison.MissingColumns.Count} columna(s), {generated.GeneratedStatements} instrucción(es) segura(s).";
+            ComparisonSummary = $"{comparison.MissingTables.Count} tabla(s), {comparison.MissingColumns.Count} columna(s), {generated.GeneratedStatements} instrucción(es) generada(s).";
         }
         catch (Exception exception)
         {
