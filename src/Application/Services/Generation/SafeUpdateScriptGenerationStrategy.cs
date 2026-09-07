@@ -121,9 +121,22 @@ public sealed class SafeUpdateScriptGenerationStrategy : IScriptGenerationStrate
     {
         var columns = table.Columns
             .OrderBy(column => column.Ordinal)
-            .Select(column => BuildColumnDefinition(column, includeDefault: true));
+            .Select(column => BuildColumnDefinition(column, includeDefault: true))
+            .ToArray();
+        var script = new StringBuilder();
+        script.AppendLine($"CREATE TABLE {Quote(table.Schema)}.{Quote(table.Name)} (");
 
-        return $"CREATE TABLE {Quote(table.Schema)}.{Quote(table.Name)} (\n    {string.Join($",{Environment.NewLine}    ", columns)}\n);";
+        for (var index = 0; index < columns.Length; index++)
+        {
+            script.Append("    ").Append(columns[index]);
+            if (index < columns.Length - 1)
+                script.Append(',');
+
+            script.AppendLine();
+        }
+
+        script.Append(");");
+        return script.ToString();
     }
 
     private static string BuildColumnDefinition(ColumnDefinition column, bool includeDefault = false)

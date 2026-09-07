@@ -161,10 +161,23 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
     {
         var columns = table.Columns
             .OrderBy(column => column.Ordinal)
-            .Select(BuildColumnDefinition);
+            .Select(BuildColumnDefinition)
+            .ToArray();
         var tableName = tableNameOverride ?? table.Name;
+        var script = new StringBuilder();
+        script.AppendLine($"CREATE TABLE {Quote(table.Schema)}.{Quote(tableName)} (");
 
-        return $"CREATE TABLE {Quote(table.Schema)}.{Quote(tableName)} (\n    {string.Join($",{Environment.NewLine}    ", columns)}\n);";
+        for (var index = 0; index < columns.Length; index++)
+        {
+            script.Append("    ").Append(columns[index]);
+            if (index < columns.Length - 1)
+                script.Append(',');
+
+            script.AppendLine();
+        }
+
+        script.Append(");");
+        return script.ToString();
     }
 
     private static string BuildColumnDefinition(ColumnDefinition column)
