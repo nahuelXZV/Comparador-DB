@@ -1,0 +1,17 @@
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\bin\Debug\net10.0\DbComparer.Infrastructure.SqlServer.deps.json
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\bin\Debug\net10.0\DbComparer.Infrastructure.SqlServer.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\bin\Debug\net10.0\DbComparer.Infrastructure.SqlServer.pdb
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\bin\Debug\net10.0\DbComparer.Application.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\bin\Debug\net10.0\DbComparer.Domain.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\bin\Debug\net10.0\DbComparer.Application.pdb
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\bin\Debug\net10.0\DbComparer.Domain.pdb
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbComparer.Infrastructure.SqlServer.csproj.AssemblyReference.cache
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbComparer.Infrastructure.SqlServer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbComparer.Infrastructure.SqlServer.AssemblyInfoInputs.cache
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbComparer.Infrastructure.SqlServer.AssemblyInfo.cs
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbComparer.Infrastructure.SqlServer.csproj.CoreCompileInputs.cache
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbCompar.ADBC86E4.Up2Date
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbComparer.Infrastructure.SqlServer.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\refint\DbComparer.Infrastructure.SqlServer.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\DbComparer.Infrastructure.SqlServer.pdb
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Infrastructure.SqlServer\obj\Debug\net10.0\ref\DbComparer.Infrastructure.SqlServer.dll

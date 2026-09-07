@@ -1,0 +1,183 @@
+<Window x:Class="Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Desktop.ViewModels"
+        xmlns:models="clr-namespace:Application.Models;assembly=Application"
+        Title="Comparador de Bases de Datos"
+        Width="1300"
+        Height="920"
+        MinWidth="1000"
+        MinHeight="720"
+        Background="#F5F7FB">
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+    <Window.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0F5FDC" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#D9E1EE" />
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="13,7" />
+            <Setter Property="Margin" Value="4" />
+        </Style>
+        <Style x:Key="PrimaryActionButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="#0B4DB8" />
+            <Setter Property="Foreground" Value="White" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#0848AD" />
+                    <Setter Property="BorderBrush" Value="#06377F" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#06377F" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#123D7A" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style x:Key="FormTextBox" TargetType="TextBox">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="PasswordBox">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock Text="Comparador de Bases de Datos" FontSize="28" FontWeight="SemiBold" Foreground="#102A56" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="1. CONEXIONES" Style="{StaticResource SectionHeader}" />
+                <Grid Margin="0,0,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <GroupBox Header="Base origen" Padding="16" BorderBrush="{StaticResource BorderBrush}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="135" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Servidor" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Origin.Server, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Row="1" Text="Autenticación" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,9,0,0" SelectedValuePath="Tag" SelectedValue="{Binding Origin.AuthenticationMode}">
+                                <ComboBoxItem Content="Usuario y contraseña" Tag="{x:Static models:AuthenticationMode.UserPassword}" />
+                                <ComboBoxItem Content="Windows" Tag="{x:Static models:AuthenticationMode.Windows}" />
+                            </ComboBox>
+                            <TextBlock Grid.Row="2" Text="Usuario" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Origin.UserName}" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="3" Text="Contraseña" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <PasswordBox Grid.Row="3" Grid.Column="1" PasswordChanged="OriginPasswordChanged" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="4" Text="Base de datos" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <ComboBox Grid.Row="4" Grid.Column="1" IsEditable="True" ItemsSource="{Binding Origin.Databases}" SelectionChanged="OriginDatabaseSelectionChanged"
+                                      Text="{Binding Origin.DatabaseName, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
+                            <CheckBox Grid.Row="5" Grid.Column="1" Content="Confiar en certificado del servidor" IsChecked="{Binding Origin.TrustServerCertificate}" Margin="0,10,0,0" />
+                            <Button Grid.Row="6" Grid.ColumnSpan="2" HorizontalAlignment="Left" Margin="0,12,0,0" Content="Probar conexión" Command="{Binding LoadOriginDatabasesCommand}" />
+                            <TextBlock Grid.Row="7" Grid.ColumnSpan="2" Text="{Binding OriginStatus}" Foreground="#52647E" Margin="4,7,0,0" TextWrapping="Wrap" />
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Grid.Column="2" Header="Base destino" Padding="16" BorderBrush="{StaticResource BorderBrush}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="135" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="Servidor" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Destination.Server, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Row="1" Text="Autenticación" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,9,0,0" SelectedValuePath="Tag" SelectedValue="{Binding Destination.AuthenticationMode}">
+                                <ComboBoxItem Content="Usuario y contraseña" Tag="{x:Static models:AuthenticationMode.UserPassword}" />
+                                <ComboBoxItem Content="Windows" Tag="{x:Static models:AuthenticationMode.Windows}" />
+                            </ComboBox>
+                            <TextBlock Grid.Row="2" Text="Usuario" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Destination.UserName}" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="3" Text="Contraseña" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <PasswordBox Grid.Row="3" Grid.Column="1" PasswordChanged="DestinationPasswordChanged" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="4" Text="Base de datos" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <ComboBox Grid.Row="4" Grid.Column="1" IsEditable="True" ItemsSource="{Binding Destination.Databases}" SelectionChanged="DestinationDatabaseSelectionChanged"
+                                      Text="{Binding Destination.DatabaseName, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
+                            <CheckBox Grid.Row="5" Grid.Column="1" Content="Confiar en certificado del servidor" IsChecked="{Binding Destination.TrustServerCertificate}" Margin="0,10,0,0" />
+                            <Button Grid.Row="6" Grid.ColumnSpan="2" HorizontalAlignment="Left" Margin="0,12,0,0" Content="Probar conexión" Command="{Binding LoadDestinationDatabasesCommand}" />
+                            <TextBlock Grid.Row="7" Grid.ColumnSpan="2" Text="{Binding DestinationStatus}" Foreground="#52647E" Margin="4,7,0,0" TextWrapping="Wrap" />
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+
+                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,18">
+                    <StackPanel>
+                        <TextBlock Text="2. ALCANCE DE COMPARACIÓN" Style="{StaticResource SectionHeader}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                            <TextBlock Text="Método de generación" VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <ComboBox Width="300" SelectedValuePath="Tag" SelectedValue="{Binding SelectedGenerationMode}">
+                                <ComboBoxItem Content="Actualización segura" Tag="{x:Static models:ScriptGenerationMode.SafeUpdate}" />
+                                <ComboBoxItem Content="Reconstruir tabla (pendiente)" Tag="{x:Static models:ScriptGenerationMode.RebuildTable}" />
+                            </ComboBox>
+                        </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <StackPanel><TextBlock Text="Esquema origen" /><ComboBox IsEditable="True" ItemsSource="{Binding Origin.Schemas}" Text="{Binding OriginSchema, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,0" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Esquema destino" /><ComboBox IsEditable="True" ItemsSource="{Binding Destination.Schemas}" Text="{Binding DestinationSchema, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,0" /></StackPanel>
+                            <Button Grid.Column="3" VerticalAlignment="Bottom" Height="32" Margin="4,5,0,0" Content="Comparar" Command="{Binding CompareCommand}" Style="{StaticResource PrimaryActionButton}" />
+                        </Grid>
+                        <WrapPanel Margin="0,16,0,0">
+                            <CheckBox Content="Tablas faltantes" IsChecked="True" IsEnabled="False" Margin="0,0,20,0" />
+                            <CheckBox Content="Columnas faltantes" IsChecked="True" IsEnabled="False" Margin="0,0,20,0" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="16">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="3. SCRIPT SQL" Style="{StaticResource SectionHeader}" DockPanel.Dock="Left" />
+                            <TextBlock Text="{Binding ComparisonSummary}" Foreground="#52647E" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                        </DockPanel>
+                        <TextBox Text="Configure ambas conexiones, seleccione los esquemas y presione ‘Comparar’." FontFamily="Cascadia Mono, Consolas" FontSize="13" AcceptsReturn="True"
+                                 TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                 MinHeight="260" IsReadOnly="True" Background="#101827" Foreground="#E8EEF9" Padding="14" TextChanged="TextBox_TextChanged" />
+                        <TextBlock Text="Avisos de seguridad" FontWeight="SemiBold" Margin="0,16,0,6" />
+                        <ListBox ItemsSource="{Binding Warnings}" MinHeight="55" BorderBrush="{StaticResource BorderBrush}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <DockPanel Grid.Row="2" Margin="0,18,0,0">
+            <TextBlock Text="El programa genera el archivo; nunca ejecuta cambios en la base destino." Foreground="#52647E" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                <Button Content="Copiar" Command="{Binding CopyCommand}" />
+                <Button Content="Guardar .sql" Command="{Binding SaveCommand}" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,11 @@
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\bin\Debug\net10.0\DbComparer.Domain.deps.json
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\bin\Debug\net10.0\DbComparer.Domain.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\bin\Debug\net10.0\DbComparer.Domain.pdb
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\DbComparer.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\DbComparer.Domain.AssemblyInfoInputs.cache
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\DbComparer.Domain.AssemblyInfo.cs
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\DbComparer.Domain.csproj.CoreCompileInputs.cache
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\DbComparer.Domain.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\refint\DbComparer.Domain.dll
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\DbComparer.Domain.pdb
+C:\Users\pc\Documents\Proyectos\Comparador\src\DbComparer.Domain\obj\Debug\net10.0\ref\DbComparer.Domain.dll

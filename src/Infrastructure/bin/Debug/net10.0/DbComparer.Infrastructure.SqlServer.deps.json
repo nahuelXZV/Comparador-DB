@@ -1,0 +1,56 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "DbComparer.Infrastructure.SqlServer/1.0.0": {
+        "dependencies": {
+          "DbComparer.Application": "1.0.0",
+          "DbComparer.Domain": "1.0.0"
+        },
+        "runtime": {
+          "DbComparer.Infrastructure.SqlServer.dll": {}
+        }
+      },
+      "DbComparer.Application/1.0.0": {
+        "dependencies": {
+          "DbComparer.Domain": "1.0.0"
+        },
+        "runtime": {
+          "DbComparer.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "DbComparer.Domain/1.0.0": {
+        "runtime": {
+          "DbComparer.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "DbComparer.Infrastructure.SqlServer/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "DbComparer.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "DbComparer.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
