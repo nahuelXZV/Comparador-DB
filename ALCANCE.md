@@ -13,7 +13,7 @@ La interfaz permitirá configurar dos conexiones independientes:
 - **Base origen:** representa la estructura de referencia.
 - **Base destino:** representa la estructura que se evaluará y, si corresponde, actualizará mediante el script generado.
 
-Cada conexión incluirá servidor, tipo de autenticación, usuario, contraseña y base de datos. Antes de continuar, el usuario podrá probar cada conexión y seleccionar el esquema correspondiente.
+Cada conexión incluirá servidor, usuario, contraseña y base de datos. La aplicación usará siempre autenticación de SQL Server mediante usuario y contraseña. Antes de continuar, el usuario podrá probar cada conexión y seleccionar el esquema correspondiente.
 
 ## Estructura que se compara
 
@@ -26,6 +26,18 @@ El alcance se limita a la definición de las tablas y sus columnas:
 - Tipo de dato, longitud, precisión y escala.
 - Nulabilidad (`NULL` o `NOT NULL`).
 - Propiedad `IDENTITY`, cuando exista.
+
+El usuario podrá activar o desactivar de forma independiente la detección de tablas faltantes y columnas faltantes. Solo las opciones seleccionadas se incluirán en el resultado y el script generado.
+
+## Filtro de tablas
+
+Antes de comparar, el usuario podrá excluir tablas de ambas bases mediante patrones de nombre separados por comas. El selector permitirá aplicar cada patrón según una de estas condiciones:
+
+- El nombre **empieza con** el patrón.
+- El nombre **termina con** el patrón.
+- El nombre **contiene** el patrón.
+
+Por ejemplo, con los patrones `rh, pl` y la condición **empieza con**, se omitirán `rh_empleados` y `pl_planillas`. La coincidencia no distinguirá mayúsculas de minúsculas y se eliminarán espacios alrededor de cada patrón. Las tablas excluidas no se considerarán para detectar tablas o columnas faltantes, ni para generar instrucciones SQL o avisos. El resultado mostrará el total de tablas omitidas, separado por base origen y destino. Si no se ingresan patrones, se compararán todas las tablas.
 
 ## Fuera de alcance
 
@@ -88,7 +100,7 @@ Esta estrategia conserva nombre, tipo, nulabilidad y valores por defecto. No rep
 La ventana principal se organizará en tres áreas:
 
 1. **Conexiones:** tarjetas lado a lado para base origen y base destino, con prueba de conexión.
-2. **Alcance de comparación:** selección de esquema origen y destino, y opciones para tablas, columnas y propiedades de columna.
+2. **Alcance de comparación:** selección de esquema origen y destino, filtro opcional de tablas por nombre y método de generación.
 3. **Resultado SQL:** panel de previsualización del script generado, con acciones para copiarlo o guardarlo como `.sql`.
 
 La interfaz no ejecutará scripts ni mostrará un mecanismo de sincronización automática.

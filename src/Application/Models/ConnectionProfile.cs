@@ -7,7 +7,6 @@ namespace Application.Models;
 public sealed class ConnectionProfile : INotifyPropertyChanged
 {
     private string _server = string.Empty;
-    private AuthenticationMode _authenticationMode = AuthenticationMode.UserPassword;
     private string _userName = string.Empty;
     private string _password = string.Empty;
     private string _databaseName = string.Empty;
@@ -17,12 +16,6 @@ public sealed class ConnectionProfile : INotifyPropertyChanged
     {
         get => _server;
         set => SetField(ref _server, value);
-    }
-
-    public AuthenticationMode AuthenticationMode
-    {
-        get => _authenticationMode;
-        set => SetField(ref _authenticationMode, value);
     }
 
     public string UserName

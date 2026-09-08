@@ -20,18 +20,11 @@ public sealed class ConnectionStringFactory
             ApplicationName = "Comparador"
         };
 
-        if (profile.AuthenticationMode == AuthenticationMode.Windows)
-        {
-            builder.IntegratedSecurity = true;
-        }
-        else
-        {
-            if (string.IsNullOrWhiteSpace(profile.UserName))
-                throw new InvalidOperationException("Debe indicar el usuario.");
+        if (string.IsNullOrWhiteSpace(profile.UserName))
+            throw new InvalidOperationException("Debe indicar el usuario.");
 
-            builder.UserID = profile.UserName.Trim();
-            builder.Password = profile.Password;
-        }
+        builder.UserID = profile.UserName.Trim();
+        builder.Password = profile.Password;
 
         return builder.ConnectionString;
     }

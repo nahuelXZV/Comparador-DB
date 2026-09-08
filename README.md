@@ -11,9 +11,11 @@ Las dos estrategias de generación están implementadas: **Actualización segura
 La interfaz permite:
 
 - Configurar una conexión origen y una conexión destino.
-- Usar autenticación de Windows o usuario y contraseña.
+- Conectarse mediante usuario y contraseña.
 - Cargar las bases de datos disponibles y los esquemas de cada conexión.
 - Comparar tablas y columnas entre los esquemas seleccionados.
+- Elegir si se comparan tablas faltantes, columnas faltantes o ambas opciones.
+- Omitir tablas por patrones de nombre, seleccionando si el nombre empieza, termina o contiene cada patrón.
 - Elegir el método de generación del script.
 - Copiar o guardar el script como archivo `.sql`.
 
@@ -31,6 +33,18 @@ Comportamiento:
 - Si una columna nueva es `IDENTITY`, SQL Server asigna valores a las filas existentes. El script muestra un aviso porque el orden de esos valores no está garantizado.
 
 No se comparan ni sincronizan índices, claves, triggers, permisos, vistas, procedimientos almacenados ni diferencias de datos.
+
+## Filtro de tablas
+
+En **Alcance de comparación**, el campo **Patrones** permite excluir tablas de ambas bases antes de comparar. Escriba uno o más valores separados por comas, por ejemplo `rh, pl`.
+
+Seleccione cómo debe coincidir el nombre de la tabla:
+
+- **Empieza con:** `rh` omite `rh_empleados`.
+- **Termina con:** `log` omite `ventas_log`.
+- **Contiene:** `temp` omite `clientes_temp_historial`.
+
+Las coincidencias no distinguen mayúsculas de minúsculas. Las tablas omitidas no producen diferencias, instrucciones SQL ni avisos; el resumen informa el total excluido en origen y destino. Si el campo está vacío, se comparan todas las tablas como antes.
 
 ## Estrategias de generación
 

@@ -28,6 +28,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _comparisonSummary = "Aún no se realizó una comparación.";
     private string _generatedScript = "Configure ambas conexiones, seleccione los esquemas y presione ‘Comparar’.";
     private ScriptGenerationMode _selectedGenerationMode = ScriptGenerationMode.SafeUpdate;
+    private string _excludedTablePatterns = string.Empty;
+    private TableNameFilterMode _selectedTableNameFilterMode = TableNameFilterMode.StartsWith;
+    private bool _isTableNameFilterEnabled;
+    private bool _compareMissingTables = true;
+    private bool _compareMissingColumns = true;
+    private string _copyFeedback = string.Empty;
 
     public MainViewModel()
     {
@@ -38,6 +44,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         CompareCommand = new AsyncRelayCommand(CompareAsync);
         CopyCommand = new AsyncRelayCommand(CopyAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
+        ClearCommand = new AsyncRelayCommand(ClearAsync);
     }
 
     public ConnectionProfile Origin { get; }
@@ -48,11 +55,48 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public AsyncRelayCommand CompareCommand { get; }
     public AsyncRelayCommand CopyCommand { get; }
     public AsyncRelayCommand SaveCommand { get; }
+    public AsyncRelayCommand ClearCommand { get; }
 
     public ScriptGenerationMode SelectedGenerationMode
     {
         get => _selectedGenerationMode;
         set => SetField(ref _selectedGenerationMode, value);
+    }
+
+    public string ExcludedTablePatterns
+    {
+        get => _excludedTablePatterns;
+        set => SetField(ref _excludedTablePatterns, value);
+    }
+
+    public TableNameFilterMode SelectedTableNameFilterMode
+    {
+        get => _selectedTableNameFilterMode;
+        set => SetField(ref _selectedTableNameFilterMode, value);
+    }
+
+    public bool IsTableNameFilterEnabled
+    {
+        get => _isTableNameFilterEnabled;
+        set => SetField(ref _isTableNameFilterEnabled, value);
+    }
+
+    public bool CompareMissingTables
+    {
+        get => _compareMissingTables;
+        set => SetField(ref _compareMissingTables, value);
+    }
+
+    public bool CompareMissingColumns
+    {
+        get => _compareMissingColumns;
+        set => SetField(ref _compareMissingColumns, value);
+    }
+
+    public string CopyFeedback
+    {
+        get => _copyFeedback;
+        private set => SetField(ref _copyFeedback, value);
     }
 
     public string OriginSchema
@@ -157,11 +201,26 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var destinationTask = _metadataReader.GetTablesAsync(_connectionStringFactory.Create(Destination), DestinationSchema.Trim());
             await Task.WhenAll(originTask, destinationTask);
 
-            var comparison = _comparisonService.Compare(originTask.Result, destinationTask.Result);
+            var tableFilter = IsTableNameFilterEnabled
+                ? new TableNameFilter(SelectedTableNameFilterMode, ExcludedTablePatterns)
+                : null;
+            var originTables = originTask.Result.Where(table => tableFilter is null || !tableFilter.ShouldExclude(table.Name)).ToArray();
+            var destinationTables = destinationTask.Result.Where(table => tableFilter is null || !tableFilter.ShouldExclude(table.Name)).ToArray();
+            var excludedOriginCount = originTask.Result.Count - originTables.Length;
+            var excludedDestinationCount = destinationTask.Result.Count - destinationTables.Length;
+
+            var comparison = _comparisonService.Compare(
+                originTables,
+                destinationTables,
+                CompareMissingTables,
+                CompareMissingColumns);
             var generated = _strategyResolver.Get(SelectedGenerationMode).Generate(comparison);
             GeneratedScript = generated.Script;
             Replace(Warnings, generated.Warnings);
-            ComparisonSummary = $"{comparison.MissingTables.Count} tabla(s), {comparison.MissingColumns.Count} columna(s), {generated.GeneratedStatements} instrucción(es) generada(s).";
+            var excludedSummary = excludedOriginCount + excludedDestinationCount > 0
+                ? $" Se omitieron {excludedOriginCount + excludedDestinationCount} tabla(s) por filtro (origen: {excludedOriginCount}, destino: {excludedDestinationCount})."
+                : string.Empty;
+            ComparisonSummary = $"{comparison.MissingTables.Count} tabla(s), {comparison.MissingColumns.Count} columna(s), {generated.GeneratedStatements} instrucción(es) generada(s).{excludedSummary}";
         }
         catch (Exception exception)
         {
@@ -174,7 +233,28 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private Task CopyAsync()
     {
         Clipboard.SetText(GeneratedScript);
-        ComparisonSummary = "Script copiado al portapapeles.";
+        CopyFeedback = "¡Copiado!";
+        return Task.CompletedTask;
+    }
+
+    private Task ClearAsync()
+    {
+        ResetConnectionProfile(Origin);
+        ResetConnectionProfile(Destination);
+        OriginSchema = "dbo";
+        DestinationSchema = "dbo";
+        SelectedGenerationMode = ScriptGenerationMode.SafeUpdate;
+        ExcludedTablePatterns = string.Empty;
+        SelectedTableNameFilterMode = TableNameFilterMode.StartsWith;
+        IsTableNameFilterEnabled = false;
+        CompareMissingTables = true;
+        CompareMissingColumns = true;
+        Warnings.Clear();
+        OriginStatus = "Configure la conexión origen.";
+        DestinationStatus = "Configure la conexión destino.";
+        ComparisonSummary = "Aún no se realizó una comparación.";
+        GeneratedScript = "Configure ambas conexiones, seleccione los esquemas y presione ‘Comparar’.";
+        CopyFeedback = string.Empty;
         return Task.CompletedTask;
     }
 
@@ -202,6 +282,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OriginStatus = message;
         else
             DestinationStatus = message;
+    }
+
+    private static void ResetConnectionProfile(ConnectionProfile profile)
+    {
+        profile.Server = string.Empty;
+        profile.UserName = string.Empty;
+        profile.Password = string.Empty;
+        profile.DatabaseName = string.Empty;
+        profile.TrustServerCertificate = true;
+        profile.Databases.Clear();
+        profile.Schemas.Clear();
     }
 
     private static void Replace(ObservableCollection<string> target, IEnumerable<string> values)

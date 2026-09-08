@@ -7,7 +7,9 @@ public sealed class SchemaComparisonService
 {
     public DatabaseComparisonResult Compare(
         IReadOnlyList<TableDefinition> originTables,
-        IReadOnlyList<TableDefinition> destinationTables)
+        IReadOnlyList<TableDefinition> destinationTables,
+        bool compareMissingTables,
+        bool compareMissingColumns)
     {
         var destinationByName = destinationTables.ToDictionary(
             table => GetTableKey(table.Schema, table.Name),
@@ -21,7 +23,8 @@ public sealed class SchemaComparisonService
         {
             if (!destinationByName.TryGetValue(GetTableKey(originTable.Schema, originTable.Name), out var destinationTable))
             {
-                missingTables.Add(originTable);
+                if (compareMissingTables)
+                    missingTables.Add(originTable);
                 continue;
             }
 
@@ -30,12 +33,15 @@ public sealed class SchemaComparisonService
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var missingColumnsInTable = new List<ColumnDefinition>();
-            foreach (var originColumn in originTable.Columns)
+            if (compareMissingColumns)
             {
-                if (!destinationColumns.Contains(originColumn.Name))
+                foreach (var originColumn in originTable.Columns)
                 {
-                    missingColumns.Add(new MissingColumn(originTable.Schema, originTable.Name, originColumn));
-                    missingColumnsInTable.Add(originColumn);
+                    if (!destinationColumns.Contains(originColumn.Name))
+                    {
+                        missingColumns.Add(new MissingColumn(originTable.Schema, originTable.Name, originColumn));
+                        missingColumnsInTable.Add(originColumn);
+                    }
                 }
             }
 

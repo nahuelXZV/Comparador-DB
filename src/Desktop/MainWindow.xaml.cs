@@ -23,6 +23,12 @@ public partial class MainWindow : Window
             viewModel.Destination.Password = ((PasswordBox)sender).Password;
     }
 
+    private void ClearPasswords(object sender, RoutedEventArgs e)
+    {
+        OriginPasswordBox.Password = string.Empty;
+        DestinationPasswordBox.Password = string.Empty;
+    }
+
     private async void OriginDatabaseSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (DataContext is MainViewModel viewModel && ((ComboBox)sender).SelectedItem is string databaseName)
@@ -35,7 +41,4 @@ public partial class MainWindow : Window
             await viewModel.LoadDestinationSchemasAsync(databaseName);
     }
 
-    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-    }
 }
