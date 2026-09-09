@@ -21,9 +21,7 @@ public partial class App : System.Windows.Application
 
         IConnectionProfileStore connectionProfileStore = new JsonConnectionProfileStore();
         IConnectionSecretStore connectionSecretStore = new WindowsCredentialConnectionSecretStore();
-        IConnectionManagementService connectionManagementService = new ConnectionManagementService(
-            connectionProfileStore,
-            connectionSecretStore);
+        IConnectionManagementService connectionManagementService = new ConnectionManagementService(connectionProfileStore, connectionSecretStore);
         IConnectionStringFactory connectionStringFactory = new ConnectionStringFactory();
         IDatabaseMetadataReader metadataReader = new DatabaseMetadataReader();
         IConnectionDiscoveryService connectionDiscoveryService = new ConnectionDiscoveryService(metadataReader, connectionStringFactory);
@@ -36,10 +34,7 @@ public partial class App : System.Windows.Application
                 new SafeUpdateScriptGenerationStrategy(),
                 new RebuildTableScriptGenerationStrategy()
             ]));
-        var mainWindow = new MainWindow(new MainViewModel(
-            connectionManagementService,
-            connectionDiscoveryService,
-            comparisonWorkflowService));
+        var mainWindow = new MainWindow(new MainViewModel(connectionManagementService, connectionDiscoveryService, comparisonWorkflowService));
         MainWindow = mainWindow;
         mainWindow.Show();
     }
