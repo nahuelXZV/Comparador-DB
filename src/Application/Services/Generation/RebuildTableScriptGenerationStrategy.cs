@@ -14,7 +14,7 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
 {
     public ScriptGenerationMode Mode => ScriptGenerationMode.RebuildTable;
 
-    public ScriptGenerationResult Generate(DatabaseComparisonResult comparison)
+    public ScriptGenerationResult Generate(DatabaseComparisonResult comparison, bool skipTablesWithDestinationOnlyColumns = true)
     {
         var statements = new List<string>();
         var warnings = new List<string>();
@@ -24,7 +24,7 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
 
         foreach (var candidate in comparison.TablesToRebuild)
         {
-            var statement = BuildRebuildTable(candidate, warnings);
+            var statement = BuildRebuildTable(candidate, warnings, skipTablesWithDestinationOnlyColumns);
             if (statement is not null)
                 statements.Add(statement);
         }
@@ -32,7 +32,7 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
         return new ScriptGenerationResult(BuildTransaction(statements, warnings), warnings, statements.Count);
     }
 
-    private static string? BuildRebuildTable(TableRebuildCandidate candidate, ICollection<string> warnings)
+    private static string? BuildRebuildTable(TableRebuildCandidate candidate, ICollection<string> warnings, bool skipTablesWithDestinationOnlyColumns)
     {
         var originTable = candidate.OriginTable;
         var destinationTable = candidate.DestinationTable;
@@ -44,10 +44,15 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
             .Select(column => column.Name)
             .ToArray();
 
-        if (destinationOnlyColumns.Length > 0)
+        if (destinationOnlyColumns.Length > 0 && skipTablesWithDestinationOnlyColumns)
         {
             warnings.Add($"[{originTable.Schema}].[{originTable.Name}] tiene columnas solo en destino ({string.Join(", ", destinationOnlyColumns)}). Fue omitida para no eliminarlas.");
             return null;
+        }
+
+        if (destinationOnlyColumns.Length > 0)
+        {
+            warnings.Add($"[{originTable.Schema}].[{originTable.Name}] tiene columnas solo en destino ({string.Join(", ", destinationOnlyColumns)}). Se eliminarán durante la reconstrucción porque la protección está deshabilitada.");
         }
 
         var temporaryName = BuildGeneratedName(originTable.Name, "__Nueva");
@@ -209,9 +214,7 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
         };
     }
 
-    private static bool IsRowVersion(ColumnDefinition column) =>
-        column.DataType.Equals("rowversion", StringComparison.OrdinalIgnoreCase) ||
-        column.DataType.Equals("timestamp", StringComparison.OrdinalIgnoreCase);
+    private static bool IsRowVersion(ColumnDefinition column) => column.DataType.Equals("rowversion", StringComparison.OrdinalIgnoreCase) || column.DataType.Equals("timestamp", StringComparison.OrdinalIgnoreCase);
 
     private static string FormatDataType(ColumnDefinition column)
     {

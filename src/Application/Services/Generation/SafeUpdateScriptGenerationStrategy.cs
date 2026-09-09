@@ -12,7 +12,7 @@ public sealed class SafeUpdateScriptGenerationStrategy : IScriptGenerationStrate
 {
     public ScriptGenerationMode Mode => ScriptGenerationMode.SafeUpdate;
 
-    public ScriptGenerationResult Generate(DatabaseComparisonResult comparison)
+    public ScriptGenerationResult Generate(DatabaseComparisonResult comparison, bool skipTablesWithDestinationOnlyColumns = true)
     {
         var statements = new List<string>();
         var warnings = new List<string>();

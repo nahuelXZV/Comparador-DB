@@ -15,6 +15,38 @@ La interfaz permitirá configurar dos conexiones independientes:
 
 Cada conexión incluirá servidor, usuario, contraseña y base de datos. La aplicación usará siempre autenticación de SQL Server mediante usuario y contraseña. Antes de continuar, el usuario podrá probar cada conexión y seleccionar el esquema correspondiente.
 
+## Conexiones guardadas
+
+Se incorporará la posibilidad de guardar y reutilizar conexiones de SQL Server desde la aplicación instalada. Los perfiles serán conexiones individuales, no pares fijos de origen y destino: una misma conexión guardada podrá seleccionarse en cualquiera de los dos roles.
+
+### Comportamiento funcional
+
+- Crear una conexión guardada con nombre único, servidor y usuario.
+- Cargar una conexión guardada tanto en **Base origen** como en **Base destino**, completando sus campos para poder comparar sin reescribirlos.
+- Probar la conexión antes de guardarla y cargar automáticamente las bases y el esquema inicial al reutilizarla.
+- Editar, renombrar y eliminar una conexión guardada.
+- Mantener las listas de bases y esquemas como datos de sesión: se recargarán al conectar y no se persistirán.
+- El comando **Limpiar** restablecerá únicamente la comparación en curso; no eliminará perfiles guardados.
+- Si un perfil deja de conectar, se mostrará el error de conexión habitual sin eliminarlo automáticamente.
+
+### Persistencia y seguridad
+
+Los perfiles serán locales al equipo y al usuario de Windows que los creó. La configuración no se guardará dentro de la carpeta de instalación, para que las actualizaciones o reinstalaciones no la sobrescriban.
+
+- Los metadatos no sensibles se almacenarán por usuario en `%LocalAppData%\Comparador\connections.json`.
+- El archivo incluirá: identificador, nombre, servidor, usuario y fechas de creación/actualización.
+- La contraseña no se guardará en el archivo ni en texto plano. Se almacenará en el Administrador de credenciales de Windows, asociada al identificador del perfil.
+- Otro usuario de Windows en el mismo equipo tendrá su propia lista de perfiles y no podrá leer las contraseñas de otro usuario.
+
+### Interfaz
+
+Se conserva el ancho y la distribución de la ventana (`700 × 840` px, con desplazamiento vertical cuando sea necesario). La funcionalidad se organiza en dos pestañas:
+
+1. **Comparar:** mantiene las tarjetas lado a lado de origen y destino. Incluye una primera fila llamada **Conexión guardada** en cada tarjeta, mediante un `ComboBox` editable que permite buscar por nombre y cargar el perfil. No se añaden paneles laterales, columnas adicionales ni botones de búsqueda separados.
+2. **Gestionar conexiones:** vista independiente a ancho completo para listar perfiles y crear, editar, renombrar o eliminar conexiones. Esta administración no está visible en la pestaña de comparación.
+
+No se incluyen perfiles compartidos entre equipos, importación/exportación de conexiones ni plantillas que guarden una comparación completa (origen, destino, esquemas, filtros y estrategia).
+
 ## Estructura que se compara
 
 El alcance se limita a la definición de las tablas y sus columnas:
@@ -93,7 +125,7 @@ Cuando una columna nueva es `NOT NULL`, el generador toma su `DEFAULT` desde la 
 
 Para igualar exactamente el orden de columnas de la base origen, la tabla destino se reconstruye: se crea una tabla auxiliar con la estructura objetivo, se copian los datos, se renombra la tabla original como respaldo temporal, se renombra la nueva tabla y finalmente se elimina el respaldo.
 
-Esta estrategia conserva nombre, tipo, nulabilidad y valores por defecto. No replica `IDENTITY`, índices, claves, triggers ni otros atributos. Si existen columnas solo en la base destino, la tabla se omite para no eliminarlas de forma implícita.
+Esta estrategia conserva nombre, tipo, nulabilidad y valores por defecto. No replica `IDENTITY`, índices, claves, triggers ni otros atributos. Por defecto, si existen columnas solo en la base destino, la tabla se omite para no eliminarlas de forma implícita. La interfaz permite desactivar esa protección para reconstruir la tabla y eliminar dichas columnas.
 
 ## Interfaz de usuario base
 

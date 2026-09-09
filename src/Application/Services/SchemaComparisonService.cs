@@ -11,9 +11,7 @@ public sealed class SchemaComparisonService
         bool compareMissingTables,
         bool compareMissingColumns)
     {
-        var destinationByName = destinationTables.ToDictionary(
-            table => GetTableKey(table.Schema, table.Name),
-            StringComparer.OrdinalIgnoreCase);
+        var destinationByName = destinationTables.ToDictionary(table => GetTableKey(table.Schema, table.Name), StringComparer.OrdinalIgnoreCase);
 
         var missingTables = new List<TableDefinition>();
         var missingColumns = new List<MissingColumn>();

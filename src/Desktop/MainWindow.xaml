@@ -1,7 +1,6 @@
 <Window x:Class="Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:Desktop.ViewModels"
         xmlns:models="clr-namespace:Application.Models;assembly=Application"
         Title="Comparador de Bases de Datos"
         Width="700"
@@ -10,9 +9,6 @@
         MinHeight="700"
         Icon="Assets/comparador-logo.png"
         Background="#F5F7FB">
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
     <Window.Resources>
         <SolidColorBrush x:Key="PrimaryBrush" Color="#0F5FDC" />
         <SolidColorBrush x:Key="BorderBrush" Color="#D9E1EE" />
@@ -162,7 +158,18 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="18">
+    <Grid>
+        <Grid Margin="18">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="IsEnabled" Value="True" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsComparing}" Value="True">
+                            <Setter Property="IsEnabled" Value="False" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -176,7 +183,14 @@
             </StackPanel>
         </StackPanel>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <TabControl Grid.Row="1">
+            <TabItem Header="Comparar">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,12">
                     <StackPanel>
@@ -197,25 +211,27 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="90" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Servidor" VerticalAlignment="Center" />
-                            <TextBox Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Origin.Server, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Grid.Row="1" Text="Usuario" VerticalAlignment="Center" Margin="0,9,0,0" />
-                            <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Origin.UserName}" Margin="0,9,0,0" />
-                            <TextBlock Grid.Row="2" Text="Contraseña" VerticalAlignment="Center" Margin="0,9,0,0" />
-                            <PasswordBox x:Name="OriginPasswordBox" Grid.Row="2" Grid.Column="1" PasswordChanged="OriginPasswordChanged" Margin="0,9,0,0" />
-                            <TextBlock Grid.Row="3" Text="Base de datos" VerticalAlignment="Center" Margin="0,9,0,0" />
-                            <ComboBox Grid.Row="3" Grid.Column="1" IsEditable="True" ItemsSource="{Binding Origin.Databases}" SelectionChanged="OriginDatabaseSelectionChanged"
+                                                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" ><Run Text="Conexi"/><Run Language="es-bo" Text="o"/><Run Text="n"/><Run Text="es"/></TextBlock>
+                                                    <ComboBox Grid.Column="1" IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Name"
+                                      ItemsSource="{Binding SavedConnections}" DisplayMemberPath="Name"
+                                      SelectedItem="{Binding SelectedOriginSavedConnection, Mode=TwoWay}"
+                                      ToolTip="Escriba o seleccione una conexión guardada" />
+                            <TextBlock Grid.Row="1" Text="Servidor" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Origin.Server, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="2" Text="Usuario" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Origin.UserName}" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="3" Text="Contraseña" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <PasswordBox x:Name="OriginPasswordBox" Grid.Row="3" Grid.Column="1" PasswordChanged="OriginPasswordChanged" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="4" Text="Base de datos" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <ComboBox Grid.Row="4" Grid.Column="1" IsEditable="True" ItemsSource="{Binding Origin.Databases}" SelectionChanged="OriginDatabaseSelectionChanged"
                                       Text="{Binding Origin.DatabaseName, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
-                            <CheckBox Grid.Row="4" Grid.ColumnSpan="2" Content="Confiar en certificado del servidor" IsChecked="{Binding Origin.TrustServerCertificate}" Margin="0,10,0,0" />
                             <Button Grid.Row="5" Grid.ColumnSpan="2" HorizontalAlignment="Left" Margin="0,12,0,0" Content="Probar conexión" Command="{Binding LoadOriginDatabasesCommand}" />
-                            <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Text="{Binding OriginStatus}" Foreground="#52647E" Margin="4,7,0,0" TextWrapping="Wrap" />
-                        </Grid>
+                                                </Grid>
                             </GroupBox>
 
                             <GroupBox Grid.Column="2" Header="Base destino" Padding="12" BorderBrush="{StaticResource BorderBrush}">
@@ -227,25 +243,27 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="90" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Servidor" VerticalAlignment="Center" />
-                            <TextBox Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Destination.Server, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Grid.Row="1" Text="Usuario" VerticalAlignment="Center" Margin="0,9,0,0" />
-                            <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Destination.UserName}" Margin="0,9,0,0" />
-                            <TextBlock Grid.Row="2" Text="Contraseña" VerticalAlignment="Center" Margin="0,9,0,0" />
-                            <PasswordBox x:Name="DestinationPasswordBox" Grid.Row="2" Grid.Column="1" PasswordChanged="DestinationPasswordChanged" Margin="0,9,0,0" />
-                            <TextBlock Grid.Row="3" Text="Base de datos" VerticalAlignment="Center" Margin="0,9,0,0" />
-                            <ComboBox Grid.Row="3" Grid.Column="1" IsEditable="True" ItemsSource="{Binding Destination.Databases}" SelectionChanged="DestinationDatabaseSelectionChanged"
+                                                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" ><Run Text="Conexi"/><Run Language="es-bo" Text="o"/><Run Text="n"/><Run Language="es-bo" Text="es"/></TextBlock>
+                                                    <ComboBox Grid.Column="1" IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Name"
+                                      ItemsSource="{Binding SavedConnections}" DisplayMemberPath="Name"
+                                      SelectedItem="{Binding SelectedDestinationSavedConnection, Mode=TwoWay}"
+                                      ToolTip="Escriba o seleccione una conexión guardada" />
+                            <TextBlock Grid.Row="1" Text="Servidor" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Destination.Server, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="2" Text="Usuario" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding Destination.UserName}" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="3" Text="Contraseña" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <PasswordBox x:Name="DestinationPasswordBox" Grid.Row="3" Grid.Column="1" PasswordChanged="DestinationPasswordChanged" Margin="0,9,0,0" />
+                            <TextBlock Grid.Row="4" Text="Base de datos" VerticalAlignment="Center" Margin="0,9,0,0" />
+                            <ComboBox Grid.Row="4" Grid.Column="1" IsEditable="True" ItemsSource="{Binding Destination.Databases}" SelectionChanged="DestinationDatabaseSelectionChanged"
                                       Text="{Binding Destination.DatabaseName, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
-                            <CheckBox Grid.Row="4" Grid.ColumnSpan="2" Content="Confiar en certificado del servidor" IsChecked="{Binding Destination.TrustServerCertificate}" Margin="0,10,0,0" />
                             <Button Grid.Row="5" Grid.ColumnSpan="2" HorizontalAlignment="Left" Margin="0,12,0,0" Content="Probar conexión" Command="{Binding LoadDestinationDatabasesCommand}" />
-                            <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Text="{Binding DestinationStatus}" Foreground="#52647E" Margin="4,7,0,0" TextWrapping="Wrap" />
-                        </Grid>
+                                                </Grid>
                             </GroupBox>
                         </Grid>
                     </StackPanel>
@@ -283,6 +301,21 @@
                             <CheckBox Content="Columnas faltantes" IsChecked="{Binding CompareMissingColumns}" Margin="0,0,16,0" />
                             <CheckBox Content="Omitir tablas por nombre" IsChecked="{Binding IsTableNameFilterEnabled}" />
                         </WrapPanel>
+                        <CheckBox Content="Omitir tablas con columnas solo en destino"
+                                  IsChecked="{Binding SkipTablesWithDestinationOnlyColumns}"
+                                  ToolTip="Al desmarcarlo, esas columnas se eliminarán al reconstruir la tabla."
+                                  Margin="0,10,0,0">
+                            <CheckBox.Style>
+                                <Style TargetType="CheckBox">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedGenerationMode}" Value="{x:Static models:ScriptGenerationMode.RebuildTable}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </CheckBox.Style>
+                        </CheckBox>
                         <Grid Margin="0,10,0,0">
                             <Grid.Style>
                                 <Style TargetType="Grid">
@@ -325,13 +358,102 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
-        </ScrollViewer>
+                    </ScrollViewer>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <TextBlock Text="{Binding CopyFeedback}" Foreground="#16803A" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,4,0" />
-            <Button Content="Limpiar" Command="{Binding ClearCommand}" Click="ClearPasswords" />
-            <Button Content="Copiar" Command="{Binding CopyCommand}" />
-            <Button Content="Guardar .sql" Command="{Binding SaveCommand}" />
-        </StackPanel>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <TextBlock Text="{Binding CopyFeedback}" Foreground="#16803A" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,4,0" />
+                        <Button Content="Limpiar" Command="{Binding ClearCommand}" Click="ClearPasswords" />
+                        <Button Content="Copiar" Command="{Binding CopyCommand}" />
+                        <Button Content="Guardar .sql" Command="{Binding SaveCommand}" />
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Gestionar conexiones">
+                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="210" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <StackPanel.Resources>
+                                <Style x:Key="SavedConnectionListButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Height" Value="28" />
+                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                    <Setter Property="Margin" Value="0,3,0,0" />
+                                    <Setter Property="Background" Value="#0F5FDC" />
+                                    <Setter Property="BorderBrush" Value="#0B4DB8" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Style>
+                            </StackPanel.Resources>
+                            <TextBlock Text="CONEXIONES GUARDADAS" Style="{StaticResource SectionHeader}" />
+                            <ListBox ItemsSource="{Binding SavedConnections}" SelectedItem="{Binding SelectedSavedConnection, Mode=TwoWay}"
+                                     DisplayMemberPath="Name" MinHeight="320" BorderBrush="{StaticResource BorderBrush}" />
+                            <Button Content="Nueva conexión" Command="{Binding NewManagedConnectionCommand}" Style="{StaticResource SavedConnectionListButton}" Margin="0,12,0,0" />
+                            <Button Content="Actualizar lista" Command="{Binding RefreshManagedConnectionsCommand}" Style="{StaticResource SavedConnectionListButton}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="DETALLE DE CONEXIÓN" Style="{StaticResource SectionHeader}" />
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="95" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="Nombre" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding ManagedConnectionName, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Grid.Row="1" Text="Servidor" VerticalAlignment="Center" Margin="0,9,0,0" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding ManagedConnection.Server, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
+                                <TextBlock Grid.Row="2" Text="Usuario" VerticalAlignment="Center" Margin="0,9,0,0" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource FormTextBox}" Text="{Binding ManagedConnection.UserName, UpdateSourceTrigger=PropertyChanged}" Margin="0,9,0,0" />
+                                <TextBlock Grid.Row="3" Text="Contraseña" VerticalAlignment="Center" Margin="0,9,0,0" />
+                                <PasswordBox x:Name="ManagedPasswordBox" Grid.Row="3" Grid.Column="1" PasswordChanged="ManagedPasswordChanged" Margin="0,9,0,0" />
+                            </Grid>
+
+                            <WrapPanel Margin="0,12,0,0">
+                                <Button Content="Probar conexión" Command="{Binding TestManagedConnectionCommand}" />
+                                <Button Content="Guardar" Command="{Binding SaveManagedConnectionCommand}" />
+                                <Button Content="Eliminar" Command="{Binding DeleteManagedConnectionCommand}" Background="#B42318" BorderBrush="#8D1C13" />
+                            </WrapPanel>
+                            </StackPanel>
+                    </Grid>
+                </Border>
+            </TabItem>
+        </TabControl>
+        </Grid>
+
+        <Border Panel.ZIndex="10" Background="#990F1A2E">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsComparing}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Border Width="300" Padding="28" Background="White" BorderBrush="#D9E1EE" BorderThickness="1" CornerRadius="8"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Comparando estructuras..." FontSize="18" FontWeight="SemiBold" Foreground="#102A56"
+                               HorizontalAlignment="Center" TextAlignment="Center" />
+                    <TextBlock Text="Espere mientras se leen las bases de datos." Foreground="#52647E" Margin="0,9,0,18"
+                               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                    <ProgressBar Height="8" IsIndeterminate="True" />
+                    <Button Content="Cancelar" Command="{Binding CancelComparisonCommand}" Width="100" HorizontalAlignment="Center" Margin="0,22,0,0"
+                            Background="#6B7280" BorderBrush="#4B5563" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </Window>

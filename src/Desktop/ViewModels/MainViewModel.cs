@@ -3,24 +3,18 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
+using Application.Abstractions;
 using Application.Models;
 using Application.Services;
-using Application.Services.Generation;
-using Infrastructure;
 using Microsoft.Win32;
 
 namespace Desktop.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
-    private readonly DatabaseMetadataReader _metadataReader = new();
-    private readonly ConnectionStringFactory _connectionStringFactory = new();
-    private readonly SchemaComparisonService _comparisonService = new();
-    private readonly ScriptGenerationStrategyResolver _strategyResolver = new(
-    [
-        new SafeUpdateScriptGenerationStrategy(),
-        new RebuildTableScriptGenerationStrategy()
-    ]);
+    private readonly IConnectionManagementService _connectionManagementService;
+    private readonly IConnectionDiscoveryService _connectionDiscoveryService;
+    private readonly IComparisonWorkflowService _comparisonWorkflowService;
     private string _originSchema = "dbo";
     private string _destinationSchema = "dbo";
     private string _originStatus = "Configure la conexión origen.";
@@ -33,29 +27,111 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _isTableNameFilterEnabled;
     private bool _compareMissingTables = true;
     private bool _compareMissingColumns = true;
+    private bool _skipTablesWithDestinationOnlyColumns = true;
     private string _copyFeedback = string.Empty;
+    private string _managedConnectionName = string.Empty;
+    private string _managementStatus = "Cree una conexión o seleccione una existente para editarla.";
+    private SavedConnectionProfile? _selectedSavedConnection;
+    private SavedConnectionProfile? _selectedOriginSavedConnection;
+    private SavedConnectionProfile? _selectedDestinationSavedConnection;
+    private bool _isComparing;
+    private CancellationTokenSource? _comparisonCancellationSource;
 
-    public MainViewModel()
+    public MainViewModel(
+        IConnectionManagementService connectionManagementService,
+        IConnectionDiscoveryService connectionDiscoveryService,
+        IComparisonWorkflowService comparisonWorkflowService)
     {
+        _connectionManagementService = connectionManagementService;
+        _connectionDiscoveryService = connectionDiscoveryService;
+        _comparisonWorkflowService = comparisonWorkflowService;
         Origin = new ConnectionProfile();
         Destination = new ConnectionProfile();
+        ManagedConnection = new ConnectionProfile();
         LoadOriginDatabasesCommand = new AsyncRelayCommand(() => LoadDatabasesAsync(Origin, true));
         LoadDestinationDatabasesCommand = new AsyncRelayCommand(() => LoadDatabasesAsync(Destination, false));
         CompareCommand = new AsyncRelayCommand(CompareAsync);
+        CancelComparisonCommand = new RelayCommand(CancelComparison, () => IsComparing);
         CopyCommand = new AsyncRelayCommand(CopyAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         ClearCommand = new AsyncRelayCommand(ClearAsync);
+        NewManagedConnectionCommand = new AsyncRelayCommand(NewManagedConnectionAsync);
+        SaveManagedConnectionCommand = new AsyncRelayCommand(SaveManagedConnectionAsync);
+        DeleteManagedConnectionCommand = new AsyncRelayCommand(DeleteManagedConnectionAsync);
+        TestManagedConnectionCommand = new AsyncRelayCommand(TestManagedConnectionAsync);
+        RefreshManagedConnectionsCommand = new AsyncRelayCommand(LoadSavedConnectionsAsync);
+        _ = LoadSavedConnectionsAsync();
     }
 
     public ConnectionProfile Origin { get; }
     public ConnectionProfile Destination { get; }
+    public ConnectionProfile ManagedConnection { get; }
     public ObservableCollection<string> Warnings { get; } = [];
+    public ObservableCollection<SavedConnectionProfile> SavedConnections { get; } = [];
     public AsyncRelayCommand LoadOriginDatabasesCommand { get; }
     public AsyncRelayCommand LoadDestinationDatabasesCommand { get; }
     public AsyncRelayCommand CompareCommand { get; }
+    public RelayCommand CancelComparisonCommand { get; }
     public AsyncRelayCommand CopyCommand { get; }
     public AsyncRelayCommand SaveCommand { get; }
     public AsyncRelayCommand ClearCommand { get; }
+    public AsyncRelayCommand NewManagedConnectionCommand { get; }
+    public AsyncRelayCommand SaveManagedConnectionCommand { get; }
+    public AsyncRelayCommand DeleteManagedConnectionCommand { get; }
+    public AsyncRelayCommand TestManagedConnectionCommand { get; }
+    public AsyncRelayCommand RefreshManagedConnectionsCommand { get; }
+
+    public event EventHandler? ManagedConnectionPasswordChanged;
+    public event EventHandler? OriginSavedConnectionApplied;
+    public event EventHandler? DestinationSavedConnectionApplied;
+
+    public string ManagedConnectionName
+    {
+        get => _managedConnectionName;
+        set => SetField(ref _managedConnectionName, value);
+    }
+
+    public string ManagementStatus
+    {
+        get => _managementStatus;
+        private set => SetField(ref _managementStatus, value);
+    }
+
+    public SavedConnectionProfile? SelectedSavedConnection
+    {
+        get => _selectedSavedConnection;
+        set
+        {
+            if (!SetField(ref _selectedSavedConnection, value))
+                return;
+
+            _ = LoadSelectedSavedConnectionAsync(value);
+        }
+    }
+
+    public SavedConnectionProfile? SelectedOriginSavedConnection
+    {
+        get => _selectedOriginSavedConnection;
+        set
+        {
+            if (!SetField(ref _selectedOriginSavedConnection, value) || value is null)
+                return;
+
+            _ = ApplySavedConnectionToComparisonAsync(value, Origin, true);
+        }
+    }
+
+    public SavedConnectionProfile? SelectedDestinationSavedConnection
+    {
+        get => _selectedDestinationSavedConnection;
+        set
+        {
+            if (!SetField(ref _selectedDestinationSavedConnection, value) || value is null)
+                return;
+
+            _ = ApplySavedConnectionToComparisonAsync(value, Destination, false);
+        }
+    }
 
     public ScriptGenerationMode SelectedGenerationMode
     {
@@ -93,10 +169,28 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set => SetField(ref _compareMissingColumns, value);
     }
 
+    public bool SkipTablesWithDestinationOnlyColumns
+    {
+        get => _skipTablesWithDestinationOnlyColumns;
+        set => SetField(ref _skipTablesWithDestinationOnlyColumns, value);
+    }
+
     public string CopyFeedback
     {
         get => _copyFeedback;
         private set => SetField(ref _copyFeedback, value);
+    }
+
+    public bool IsComparing
+    {
+        get => _isComparing;
+        private set
+        {
+            if (!SetField(ref _isComparing, value))
+                return;
+
+            CancelComparisonCommand.RaiseCanExecuteChanged();
+        }
     }
 
     public string OriginSchema
@@ -142,7 +236,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             SetConnectionStatus(isOrigin, "Probando conexión y cargando bases de datos...");
-            var databases = await _metadataReader.GetDatabasesAsync(_connectionStringFactory.Create(profile));
+            var databases = await _connectionDiscoveryService.GetDatabasesAsync(CreateConnectionSettings(profile));
             Replace(profile.Databases, databases);
             if (string.IsNullOrWhiteSpace(profile.DatabaseName) && databases.Count > 0)
                 profile.DatabaseName = databases[0];
@@ -170,7 +264,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 throw new InvalidOperationException("Seleccione o escriba la base de datos.");
 
             SetConnectionStatus(isOrigin, "Cargando esquemas...");
-            var schemas = await _metadataReader.GetSchemasAsync(_connectionStringFactory.Create(profile));
+            var schemas = await _connectionDiscoveryService.GetSchemasAsync(CreateConnectionSettings(profile));
             Replace(profile.Schemas, schemas);
             var selectedSchema = schemas.FirstOrDefault(schema => schema.Equals("dbo", StringComparison.OrdinalIgnoreCase))
                 ?? schemas.FirstOrDefault()
@@ -191,36 +285,36 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private async Task CompareAsync()
     {
         Warnings.Clear();
+        using var cancellationSource = new CancellationTokenSource();
+        _comparisonCancellationSource = cancellationSource;
+        IsComparing = true;
         try
         {
-            if (string.IsNullOrWhiteSpace(OriginSchema) || string.IsNullOrWhiteSpace(DestinationSchema))
-                throw new InvalidOperationException("Seleccione un esquema para ambas bases.");
-
             ComparisonSummary = "Leyendo estructuras...";
-            var originTask = _metadataReader.GetTablesAsync(_connectionStringFactory.Create(Origin), OriginSchema.Trim());
-            var destinationTask = _metadataReader.GetTablesAsync(_connectionStringFactory.Create(Destination), DestinationSchema.Trim());
-            await Task.WhenAll(originTask, destinationTask);
-
             var tableFilter = IsTableNameFilterEnabled
                 ? new TableNameFilter(SelectedTableNameFilterMode, ExcludedTablePatterns)
                 : null;
-            var originTables = originTask.Result.Where(table => tableFilter is null || !tableFilter.ShouldExclude(table.Name)).ToArray();
-            var destinationTables = destinationTask.Result.Where(table => tableFilter is null || !tableFilter.ShouldExclude(table.Name)).ToArray();
-            var excludedOriginCount = originTask.Result.Count - originTables.Length;
-            var excludedDestinationCount = destinationTask.Result.Count - destinationTables.Length;
-
-            var comparison = _comparisonService.Compare(
-                originTables,
-                destinationTables,
+            var result = await _comparisonWorkflowService.CompareAsync(new ComparisonWorkflowRequest(
+                CreateConnectionSettings(Origin),
+                CreateConnectionSettings(Destination),
+                OriginSchema,
+                DestinationSchema,
                 CompareMissingTables,
-                CompareMissingColumns);
-            var generated = _strategyResolver.Get(SelectedGenerationMode).Generate(comparison);
-            GeneratedScript = generated.Script;
-            Replace(Warnings, generated.Warnings);
-            var excludedSummary = excludedOriginCount + excludedDestinationCount > 0
-                ? $" Se omitieron {excludedOriginCount + excludedDestinationCount} tabla(s) por filtro (origen: {excludedOriginCount}, destino: {excludedDestinationCount})."
+                CompareMissingColumns,
+                tableFilter,
+                SelectedGenerationMode,
+                SkipTablesWithDestinationOnlyColumns), cancellationSource.Token);
+            GeneratedScript = result.GeneratedScript.Script;
+            Replace(Warnings, result.GeneratedScript.Warnings);
+            var excludedTables = result.ExcludedOriginTables + result.ExcludedDestinationTables;
+            var excludedSummary = excludedTables > 0
+                ? $" Se omitieron {excludedTables} tabla(s) por filtro (origen: {result.ExcludedOriginTables}, destino: {result.ExcludedDestinationTables})."
                 : string.Empty;
-            ComparisonSummary = $"{comparison.MissingTables.Count} tabla(s), {comparison.MissingColumns.Count} columna(s), {generated.GeneratedStatements} instrucción(es) generada(s).{excludedSummary}";
+            ComparisonSummary = $"{result.Comparison.MissingTables.Count} tabla(s), {result.Comparison.MissingColumns.Count} columna(s), {result.GeneratedScript.GeneratedStatements} instrucción(es) generada(s).{excludedSummary}";
+        }
+        catch (OperationCanceledException) when (cancellationSource.IsCancellationRequested)
+        {
+            ComparisonSummary = "Comparación cancelada.";
         }
         catch (Exception exception)
         {
@@ -228,6 +322,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
             Warnings.Add(exception.Message);
             ComparisonSummary = "Comparación no completada.";
         }
+        finally
+        {
+            _comparisonCancellationSource = null;
+            IsComparing = false;
+        }
+    }
+
+    private void CancelComparison()
+    {
+        _comparisonCancellationSource?.Cancel();
     }
 
     private Task CopyAsync()
@@ -239,6 +343,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private Task ClearAsync()
     {
+        SelectedOriginSavedConnection = null;
+        SelectedDestinationSavedConnection = null;
         ResetConnectionProfile(Origin);
         ResetConnectionProfile(Destination);
         OriginSchema = "dbo";
@@ -249,6 +355,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         IsTableNameFilterEnabled = false;
         CompareMissingTables = true;
         CompareMissingColumns = true;
+        SkipTablesWithDestinationOnlyColumns = true;
         Warnings.Clear();
         OriginStatus = "Configure la conexión origen.";
         DestinationStatus = "Configure la conexión destino.";
@@ -256,6 +363,163 @@ public sealed class MainViewModel : INotifyPropertyChanged
         GeneratedScript = "Configure ambas conexiones, seleccione los esquemas y presione ‘Comparar’.";
         CopyFeedback = string.Empty;
         return Task.CompletedTask;
+    }
+
+    private Task NewManagedConnectionAsync()
+    {
+        SelectedSavedConnection = null;
+        ResetManagedConnectionEditor();
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveManagedConnectionAsync()
+    {
+        try
+        {
+            var profile = await _connectionManagementService.SaveAsync(new SaveConnectionProfileCommand(
+                SelectedSavedConnection?.Id,
+                ManagedConnectionName,
+                ManagedConnection.Server,
+                ManagedConnection.UserName,
+                ManagedConnection.Password));
+            await LoadSavedConnectionsAsync();
+            SelectedSavedConnection = SavedConnections.Single(savedConnection => savedConnection.Id == profile.Id);
+            ManagementStatus = $"La conexión '{profile.Name}' fue guardada.";
+        }
+        catch (Exception exception)
+        {
+            ManagementStatus = $"No se pudo guardar la conexión: {exception.Message}";
+        }
+    }
+
+    private async Task DeleteManagedConnectionAsync()
+    {
+        if (SelectedSavedConnection is null)
+        {
+            ManagementStatus = "Seleccione una conexión para eliminarla.";
+            return;
+        }
+
+        try
+        {
+            var profile = SelectedSavedConnection;
+            await _connectionManagementService.DeleteAsync(profile.Id);
+            SelectedSavedConnection = null;
+            ResetManagedConnectionEditor();
+            await LoadSavedConnectionsAsync();
+            ManagementStatus = $"La conexión '{profile.Name}' fue eliminada.";
+        }
+        catch (Exception exception)
+        {
+            ManagementStatus = $"No se pudo eliminar la conexión: {exception.Message}";
+        }
+    }
+
+    private async Task TestManagedConnectionAsync()
+    {
+        try
+        {
+            ManagementStatus = "Probando conexión y cargando bases de datos...";
+            var databases = await _connectionDiscoveryService.GetDatabasesAsync(CreateConnectionSettings(ManagedConnection));
+
+            ManagementStatus = $"Conexión correcta. {databases.Count} base(s) disponible(s).";
+        }
+        catch (Exception exception)
+        {
+            ManagementStatus = $"No se pudo conectar: {exception.Message}";
+        }
+    }
+
+    private async Task LoadSavedConnectionsAsync()
+    {
+        try
+        {
+            var profiles = await _connectionManagementService.GetAllAsync();
+            Replace(SavedConnections, profiles);
+        }
+        catch (Exception exception)
+        {
+            ManagementStatus = $"No se pudieron cargar las conexiones guardadas: {exception.Message}";
+        }
+    }
+
+    private async Task LoadSelectedSavedConnectionAsync(SavedConnectionProfile? profile)
+    {
+        if (profile is null)
+        {
+            ResetManagedConnectionEditor();
+            return;
+        }
+
+        try
+        {
+            var details = await _connectionManagementService.GetDetailsAsync(profile.Id)
+                ?? throw new InvalidOperationException("La conexión seleccionada ya no existe.");
+            ManagedConnectionName = details.Profile.Name;
+            ManagedConnection.Server = details.Profile.Server;
+            ManagedConnection.UserName = details.Profile.UserName;
+            SetManagedConnectionPassword(details.Password);
+            ManagementStatus = $"Editando la conexión '{details.Profile.Name}'.";
+        }
+        catch (Exception exception)
+        {
+            ManagementStatus = $"No se pudo cargar la conexión: {exception.Message}";
+        }
+    }
+
+    private async Task ApplySavedConnectionToComparisonAsync(SavedConnectionProfile profile, ConnectionProfile target, bool isOrigin)
+    {
+        try
+        {
+            var details = await _connectionManagementService.GetDetailsAsync(profile.Id)
+                ?? throw new InvalidOperationException("La conexión seleccionada ya no existe.");
+            var selectedProfile = isOrigin ? SelectedOriginSavedConnection : SelectedDestinationSavedConnection;
+            if (!Equals(selectedProfile, profile))
+                return;
+
+            target.Server = details.Profile.Server;
+            target.UserName = details.Profile.UserName;
+            target.Password = details.Password;
+            target.DatabaseName = string.Empty;
+            target.Databases.Clear();
+            target.Schemas.Clear();
+
+            if (isOrigin)
+            {
+                OriginSchema = "dbo";
+                OriginSavedConnectionApplied?.Invoke(this, EventArgs.Empty);
+            }
+            else
+            {
+                DestinationSchema = "dbo";
+                DestinationSavedConnectionApplied?.Invoke(this, EventArgs.Empty);
+            }
+
+            await LoadDatabasesAsync(target, isOrigin);
+            var stillSelected = isOrigin
+                ? Equals(SelectedOriginSavedConnection, profile)
+                : Equals(SelectedDestinationSavedConnection, profile);
+            if (stillSelected && !string.IsNullOrWhiteSpace(target.DatabaseName))
+                await LoadSchemasAsync(target, isOrigin, target.DatabaseName);
+        }
+        catch (Exception exception)
+        {
+            SetConnectionStatus(isOrigin, $"No se pudo cargar la conexión guardada: {exception.Message}");
+        }
+    }
+
+    private void ResetManagedConnectionEditor()
+    {
+        ManagedConnectionName = string.Empty;
+        ResetConnectionProfile(ManagedConnection);
+        SetManagedConnectionPassword(string.Empty);
+        ManagementStatus = "Cree una conexión o seleccione una existente para editarla.";
+    }
+
+    private void SetManagedConnectionPassword(string password)
+    {
+        ManagedConnection.Password = password;
+        ManagedConnectionPasswordChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private Task SaveAsync()
@@ -276,6 +540,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         return Task.CompletedTask;
     }
 
+    private static DatabaseConnectionSettings CreateConnectionSettings(ConnectionProfile profile) => new(
+        profile.Server,
+        profile.UserName,
+        profile.Password,
+        profile.DatabaseName);
+
     private void SetConnectionStatus(bool isOrigin, string message)
     {
         if (isOrigin)
@@ -290,24 +560,24 @@ public sealed class MainViewModel : INotifyPropertyChanged
         profile.UserName = string.Empty;
         profile.Password = string.Empty;
         profile.DatabaseName = string.Empty;
-        profile.TrustServerCertificate = true;
         profile.Databases.Clear();
         profile.Schemas.Clear();
     }
 
-    private static void Replace(ObservableCollection<string> target, IEnumerable<string> values)
+    private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> values)
     {
         target.Clear();
         foreach (var value in values)
             target.Add(value);
     }
 
-    private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
-            return;
+            return false;
 
         field = value;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        return true;
     }
 }

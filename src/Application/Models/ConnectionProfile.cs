@@ -10,7 +10,6 @@ public sealed class ConnectionProfile : INotifyPropertyChanged
     private string _userName = string.Empty;
     private string _password = string.Empty;
     private string _databaseName = string.Empty;
-    private bool _trustServerCertificate = true;
 
     public string Server
     {
@@ -35,12 +34,6 @@ public sealed class ConnectionProfile : INotifyPropertyChanged
     {
         get => _databaseName;
         set => SetField(ref _databaseName, value);
-    }
-
-    public bool TrustServerCertificate
-    {
-        get => _trustServerCertificate;
-        set => SetField(ref _trustServerCertificate, value);
     }
 
     public ObservableCollection<string> Databases { get; } = [];

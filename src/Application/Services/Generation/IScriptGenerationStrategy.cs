@@ -6,5 +6,5 @@ public interface IScriptGenerationStrategy
 {
     ScriptGenerationMode Mode { get; }
 
-    ScriptGenerationResult Generate(DatabaseComparisonResult comparison);
+    ScriptGenerationResult Generate(DatabaseComparisonResult comparison, bool skipTablesWithDestinationOnlyColumns = true);
 }

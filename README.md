@@ -12,12 +12,15 @@ La interfaz permite:
 
 - Configurar una conexión origen y una conexión destino.
 - Conectarse mediante usuario y contraseña.
+- Gestionar conexiones guardadas locales: crear, editar, eliminar y reutilizar perfiles en origen o destino.
 - Cargar las bases de datos disponibles y los esquemas de cada conexión.
 - Comparar tablas y columnas entre los esquemas seleccionados.
 - Elegir si se comparan tablas faltantes, columnas faltantes o ambas opciones.
 - Omitir tablas por patrones de nombre, seleccionando si el nombre empieza, termina o contiene cada patrón.
 - Elegir el método de generación del script.
 - Copiar o guardar el script como archivo `.sql`.
+
+Las conexiones guardadas incluyen nombre, servidor y usuario. Sus contraseñas se almacenan en el Administrador de credenciales de Windows; las bases de datos y esquemas se eligen por cada comparación y no forman parte del perfil.
 
 ## Actualización segura
 
@@ -56,17 +59,19 @@ IScriptGenerationStrategy
 └── RebuildTableScriptGenerationStrategy    Implementada
 ```
 
-`SafeUpdateScriptGenerationStrategy` genera cambios aditivos. `RebuildTableScriptGenerationStrategy` crea una tabla auxiliar con el orden de origen, copia los datos y sustituye la tabla anterior dentro de la transacción. Este segundo modo conserva únicamente nombre, tipo, nulabilidad y valores por defecto; no replica `IDENTITY`, índices, claves ni triggers.
+`SafeUpdateScriptGenerationStrategy` genera cambios aditivos. `RebuildTableScriptGenerationStrategy` crea una tabla auxiliar con el orden de origen, copia los datos y sustituye la tabla anterior dentro de la transacción. Este segundo modo conserva únicamente nombre, tipo, nulabilidad y valores por defecto; no replica `IDENTITY`, índices, claves ni triggers. Por defecto omite las tablas que contienen columnas solo en destino; la protección se puede desactivar desde la interfaz para eliminarlas durante la reconstrucción.
 
 ## Estructura
 
 ```text
 src/
-├── Application/      Comparación, modelos de aplicación y estrategias SQL
+├── Application/      Casos de uso, contratos, comparación y estrategias SQL
 ├── Domain/           Definiciones de tablas y columnas
-├── Infrastructure/   Lectura de metadatos y conexiones a SQL Server
-└── Desktop/          Interfaz WPF y ViewModels
+├── Infrastructure/   SQL Server, perfiles JSON y Credential Manager
+└── Desktop/          Interfaz WPF, ViewModels y punto de composición
 ```
+
+Consulta [ARQUITECTURA.md](ARQUITECTURA.md) para el detalle de capas, servicios, dependencias y flujos.
 
 ## Requisitos
 
@@ -92,6 +97,6 @@ También se puede abrir `Comparador.slnx` en Visual Studio y establecer `Desktop
 
 - La reconstrucción se omite si la tabla destino contiene columnas que no existen en origen, para no eliminarlas silenciosamente.
 - Los valores automáticos para columnas `NOT NULL` deben revisarse antes de ejecutar el script en un entorno productivo.
-- La aplicación no almacena contraseñas: solo se mantienen en memoria durante la sesión.
+- Las contraseñas de conexiones guardadas se almacenan sólo en el Administrador de credenciales de Windows del usuario actual.
 
 Consulta [ALCANCE.md](ALCANCE.md) para la definición funcional completa.

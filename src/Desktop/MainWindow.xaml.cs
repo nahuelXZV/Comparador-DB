@@ -6,9 +6,13 @@ namespace Desktop;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    public MainWindow(MainViewModel viewModel)
     {
+        DataContext = viewModel;
         InitializeComponent();
+        viewModel.ManagedConnectionPasswordChanged += (_, _) => ManagedPasswordBox.Password = viewModel.ManagedConnection.Password;
+        viewModel.OriginSavedConnectionApplied += (_, _) => OriginPasswordBox.Password = viewModel.Origin.Password;
+        viewModel.DestinationSavedConnectionApplied += (_, _) => DestinationPasswordBox.Password = viewModel.Destination.Password;
     }
 
     private void OriginPasswordChanged(object sender, RoutedEventArgs e)
@@ -21,6 +25,12 @@ public partial class MainWindow : Window
     {
         if (DataContext is MainViewModel viewModel)
             viewModel.Destination.Password = ((PasswordBox)sender).Password;
+    }
+
+    private void ManagedPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel viewModel)
+            viewModel.ManagedConnection.Password = ((PasswordBox)sender).Password;
     }
 
     private void ClearPasswords(object sender, RoutedEventArgs e)
