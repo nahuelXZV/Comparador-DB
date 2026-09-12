@@ -68,8 +68,16 @@ src/
 ├── Application/      Casos de uso, contratos, comparación y estrategias SQL
 ├── Domain/           Definiciones de tablas y columnas
 ├── Infrastructure/   SQL Server, perfiles JSON y Credential Manager
-└── Desktop/          Interfaz WPF, ViewModels y punto de composición
+└── Desktop/
+    ├── Behaviors/     Enlaces reutilizables para controles WPF
+    ├── Services/      Adaptadores de portapapeles y archivos
+    ├── Themes/        Colores y estilos compartidos
+    ├── ViewModels/    Shell, comparación, conexiones y formularios
+    ├── Views/         Vistas desacopladas por funcionalidad
+    └── App.xaml.cs    Punto de composición
 ```
+
+`MainWindow` funciona únicamente como shell. La comparación y la gestión de perfiles tienen vistas y ViewModels independientes, mientras que origen y destino comparten un mismo formulario de conexión. Los ViewModels consumen casos de uso de `Application`; no acceden directamente a SQL Server, archivos, Credential Manager, portapapeles ni diálogos WPF.
 
 Consulta [ARQUITECTURA.md](ARQUITECTURA.md) para el detalle de capas, servicios, dependencias y flujos.
 

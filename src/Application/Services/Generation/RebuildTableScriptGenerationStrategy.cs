@@ -104,21 +104,20 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
         var qualifiedOriginalName = $"{Quote(originTable.Schema)}.{Quote(originTable.Name)}";
         var qualifiedTemporaryName = $"{Quote(originTable.Schema)}.{Quote(temporaryName)}";
         var qualifiedBackupName = $"{Quote(originTable.Schema)}.{Quote(backupName)}";
+        var formattedInsertColumns = FormatSqlList(insertColumns);
+        var formattedSelectValues = FormatSqlList(selectValues);
 
         return $"""
             {BuildCreateTable(originTable, temporaryName)}
-
             INSERT INTO {qualifiedTemporaryName} (
-                {string.Join($",{Environment.NewLine}                ", insertColumns)}
+                {formattedInsertColumns}
             )
-            SELECT
-                {string.Join($",{Environment.NewLine}                ", selectValues)}
+            SELECT {formattedSelectValues}
             FROM {qualifiedOriginalName};
-
             EXEC sys.sp_rename N'{EscapeSqlLiteral(qualifiedOriginalName)}', N'{EscapeSqlLiteral(backupName)}', N'OBJECT';
             EXEC sys.sp_rename N'{EscapeSqlLiteral(qualifiedTemporaryName)}', N'{EscapeSqlLiteral(originTable.Name)}', N'OBJECT';
-
             DROP TABLE {qualifiedBackupName};
+
             """.Trim();
     }
 
@@ -142,15 +141,6 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
 
                 script.AppendLine();
             }
-        }
-
-        if (warnings.Count > 0)
-        {
-            script.AppendLine("    -- Avisos para revisar antes de ejecutar:");
-            foreach (var warning in warnings)
-                script.AppendLine($"    -- {warning}");
-
-            script.AppendLine();
         }
 
         script.AppendLine("    COMMIT TRANSACTION;");
@@ -237,6 +227,32 @@ public sealed class RebuildTableScriptGenerationStrategy : IScriptGenerationStra
             ? sourceName
             : sourceName[..maximumSourceLength];
         return $"{baseName}{suffix}";
+    }
+
+    private static string FormatSqlList(IReadOnlyList<string> values)
+    {
+        const int indentationLength = 4;
+        const int maximumLineLength = 120;
+        var indentation = new string(' ', indentationLength);
+        var lines = new List<string>();
+        var currentLine = new StringBuilder();
+
+        for (var index = 0; index < values.Count; index++)
+        {
+            var token = values[index] + (index < values.Count - 1 ? "," : string.Empty);
+            if (currentLine.Length > 0 && indentationLength + currentLine.Length + token.Length > maximumLineLength)
+            {
+                lines.Add(currentLine.ToString());
+                currentLine.Clear();
+            }
+
+            currentLine.Append(token);
+        }
+
+        if (currentLine.Length > 0)
+            lines.Add(currentLine.ToString());
+
+        return string.Join(Environment.NewLine + indentation, lines);
     }
 
     private static string FormatLength(int? length) => length switch

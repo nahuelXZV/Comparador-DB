@@ -17,7 +17,7 @@ Cada conexión incluirá servidor, usuario, contraseña y base de datos. La apli
 
 ## Conexiones guardadas
 
-Se incorporará la posibilidad de guardar y reutilizar conexiones de SQL Server desde la aplicación instalada. Los perfiles serán conexiones individuales, no pares fijos de origen y destino: una misma conexión guardada podrá seleccionarse en cualquiera de los dos roles.
+La aplicación permite guardar y reutilizar conexiones de SQL Server desde la aplicación instalada. Los perfiles son conexiones individuales, no pares fijos de origen y destino: una misma conexión guardada puede seleccionarse en cualquiera de los dos roles.
 
 ### Comportamiento funcional
 

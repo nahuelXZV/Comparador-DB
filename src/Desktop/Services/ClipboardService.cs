@@ -1,0 +1,8 @@
+using System.Windows;
+
+namespace Desktop.Services;
+
+public sealed class ClipboardService : IClipboardService
+{
+    public void SetText(string text) => Clipboard.SetText(text);
+}

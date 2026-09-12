@@ -10,7 +10,14 @@ La solución sigue una separación por capas: `Desktop` presenta el estado y rec
 flowchart LR
     subgraph desktop[Desktop WPF]
         view["MainWindow"]
-        vm["MainViewModel"]
+        comparisonView["ComparisonView"]
+        managementView["ConnectionManagementView"]
+        formView["ConnectionFormView"]
+        shell["ShellViewModel"]
+        comparisonVm["ComparisonViewModel"]
+        managementVm["ConnectionManagementViewModel"]
+        formVm["ConnectionFormViewModel"]
+        uiServices["Clipboard / Script file services"]
         app["App composition root"]
     end
 
@@ -36,11 +43,21 @@ flowchart LR
         credentialManager["Windows Credential Manager"]
     end
 
-    view --> vm
-    app --> vm
-    vm --> management
-    vm --> discovery
-    vm --> workflow
+    view --> comparisonView
+    view --> managementView
+    comparisonView --> formView
+    view --> shell
+    shell --> comparisonVm
+    shell --> managementVm
+    comparisonVm --> formVm
+    managementVm --> formVm
+    comparisonVm --> uiServices
+    app --> shell
+    comparisonVm --> management
+    comparisonVm --> discovery
+    comparisonVm --> workflow
+    managementVm --> management
+    managementVm --> discovery
     management --> contracts
     discovery --> contracts
     workflow --> comparison
@@ -87,7 +104,7 @@ Domain ───────────────► ninguna otra capa
 ```mermaid
 sequenceDiagram
     participant User as Usuario
-    participant UI as MainViewModel
+    participant UI as ConnectionManagementViewModel
     participant Service as ConnectionManagementService
     participant Profiles as JsonConnectionProfileStore
     participant Secrets as WindowsCredentialConnectionSecretStore
@@ -150,7 +167,34 @@ DatabaseMetadataReader                     -> IDatabaseMetadataReader
 ConnectionStringFactory                    -> IConnectionStringFactory
 ```
 
-Después, `App` crea los servicios de Application y los entrega al `MainViewModel`. Esto permite reemplazar infraestructura en el futuro —por ejemplo, un almacén centralizado o un lector para otro motor— sin modificar la interfaz.
+Después, `App` crea los servicios de Application, los adaptadores propios de WPF y el `ShellViewModel`. El shell comparte la colección de perfiles entre `ComparisonViewModel` y `ConnectionManagementViewModel`. Esto permite reemplazar infraestructura en el futuro —por ejemplo, un almacén centralizado o un lector para otro motor— sin modificar la interfaz.
+
+## Arquitectura de presentación
+
+```mermaid
+flowchart TD
+    main["MainWindow\nencabezado, pestañas y overlay"] --> shell["ShellViewModel"]
+    shell --> comparison["ComparisonViewModel"]
+    shell --> management["ConnectionManagementViewModel"]
+    comparison --> origin["ComparisonConnectionViewModel\norigen"]
+    comparison --> destination["ComparisonConnectionViewModel\ndestino"]
+    origin --> originForm["ConnectionFormViewModel"]
+    destination --> destinationForm["ConnectionFormViewModel"]
+    management --> editor["ConnectionFormViewModel\neditor"]
+```
+
+`MainWindow.xaml.cs` sólo inicializa la vista y asigna el `DataContext`. La sincronización de `PasswordBox` y la selección de bases se implementan mediante `PasswordBoxBehavior` y `ComboBoxSelectionBehavior`, por lo que no existen eventos funcionales en el code-behind.
+
+Las vistas se distribuyen así:
+
+| Vista | Responsabilidad |
+|---|---|
+| `MainWindow` | Shell visual, pestañas, encabezado y overlay de comparación. |
+| `ComparisonView` | Configuración, comparación, script y acciones del resultado. |
+| `ConnectionFormView` | Formulario reutilizable de origen y destino. |
+| `ConnectionManagementView` | Listado y edición de perfiles guardados. |
+
+Los recursos compartidos viven en `Themes/Colors.xaml` y `Themes/Controls.xaml`. El acceso al portapapeles y al diálogo para guardar scripts queda detrás de interfaces de `Desktop/Services`, evitando dependencias WPF dentro de los ViewModels.
 
 ## Convenciones para cambios futuros
 
@@ -162,6 +206,5 @@ Después, `App` crea los servicios de Application y los entrega al `MainViewMode
 
 ## Trabajo técnico pendiente
 
-- `ConnectionProfile` todavía contiene notificación de cambios y colecciones orientadas a WPF dentro de `Application`. El siguiente refinamiento puede mover ese estado a un ViewModel específico de Desktop y dejar en Application únicamente `DatabaseConnectionSettings`.
 - La composición actual es manual y explícita. Si el número de servicios crece, se puede sustituir por un contenedor de inyección de dependencias.
 - Aún no hay pruebas automatizadas por decisión del proyecto. Cuando se incorporen, los servicios de Application podrán probarse con implementaciones falsas de sus interfaces.
